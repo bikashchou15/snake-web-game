@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>12ipproject — Snake Web Port</title>
+  <link rel="stylesheet" href="snake_web.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="ui">Use arrow keys to move. Refresh to restart.</div>
+      <div class="canvas-wrap">
+        <div id="overlay">
+          <button id="play">Play</button>
+        </div>
+        <canvas id="game" width="500" height="500"></canvas>
+      </div>
+      <div class="controls">
+        <button id="pause" class="btn small transparent">Pause</button>
+        <button id="restart" class="btn small transparent">Restart</button>
+      </div>
+    </div>
+    <div class="sidebar">
+      <div class="card hud">
+        <div class="label">Score</div>
+        <div id="score" class="score">0</div>
+      </div>
+      <div class="card hud controls-card">
+        <div class="label">Controls</div>
+        <div class="instructions">Press Space or Enter to start. Use Pause/Restart buttons for control.</div>
+        <div style="height:10px"></div>
+        <div class="key-map">
+          <div class="key-row"><kbd>↑</kbd><span>Move Up</span></div>
+          <div class="key-row"><kbd>↓</kbd><span>Move Down</span></div>
+          <div class="key-row"><kbd>←</kbd><span>Move Left</span></div>
+          <div class="key-row"><kbd>→</kbd><span>Move Right</span></div>
+          <div class="key-row"><kbd>W</kbd><span>Move Up</span></div>
+          <div class="key-row"><kbd>S</kbd><span>Move Down</span></div>
+          <div class="key-row"><kbd>A</kbd><span>Move Left</span></div>
+          <div class="key-row"><kbd>D</kbd><span>Move Right</span></div>
+        </div>
+      </div>
+      
+    </div>
+    
+  </div>
+  <div id="credit" class="credit">Made by Himan and Bikash</div>
+    </div>
+  </div>
+
+  <script>
+  // Ported simple snake game; green background, blue grid, brown snake, red food
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  const rows = 20; // keep consistent with python version
+  const cols = 20;
+  const cell = width / rows;
+
+  const gridColor = 'rgb(0,0,255)'; // blue
+  const snakeColor = 'rgb(139,69,19)'; // brown
+  const foodColor = 'rgb(255,0,0)'; // red
+
+  let snake = [{x:10, y:10}];
+  let dir = {x:0, y:1};
+  let food = randomFood();
+
+  // Movement timing: move every 150ms, but render at 60fps for smooth interpolation
+  const MOVE_INTERVAL = 150; // ms
+  let lastMove = 0;
+  let lastTime = 0;
+  let animProgress = 0;
+  let running = false; // start only when Play pressed
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key;
+    if (!running && (k === ' ' || k === 'Enter')) startGame();
+    // Arrow keys
+    if (k === 'ArrowLeft' && dir.x !== 1) { dir = {x:-1,y:0}; }
+    if (k === 'ArrowRight' && dir.x !== -1) { dir = {x:1,y:0}; }
+    if (k === 'ArrowUp' && dir.y !== 1) { dir = {x:0,y:-1}; }
+    if (k === 'ArrowDown' && dir.y !== -1) { dir = {x:0,y:1}; }
+    // WASD (both lowercase and uppercase handled by checking k.toLowerCase())
+    const kl = k.toLowerCase();
+    if (kl === 'a' && dir.x !== 1) { dir = {x:-1,y:0}; }
+    if (kl === 'd' && dir.x !== -1) { dir = {x:1,y:0}; }
+    if (kl === 'w' && dir.y !== 1) { dir = {x:0,y:-1}; }
+    if (kl === 's' && dir.y !== -1) { dir = {x:0,y:1}; }
+  });
+
+  function randomFood(){
+    while (true){
+      const x = Math.floor(Math.random()*(rows-2))+1;
+      const y = Math.floor(Math.random()*(rows-2))+1;
+      if (!snake.some(s => s.x===x && s.y===y)) return {x,y};
+    }
+  }
+
+  function updateMove(){
+    // advance snake on grid
+    const head = {...snake[0]};
+    head.x += dir.x;
+    head.y += dir.y;
+    // check bounds
+    if (head.x < 0 || head.x >= rows || head.y < 0 || head.y >= rows){
+      // reset
+      snake = [{x:10,y:10}];
+      dir = {x:0,y:1};
+      food = randomFood();
+      return;
+    }
+    // self collision
+    for (let i=0;i<snake.length;i++){
+      if (snake[i].x===head.x && snake[i].y===head.y){
+        snake = [{x:10,y:10}];
+        dir = {x:0,y:1};
+        food = randomFood();
+        return;
+      }
+    }
+    snake.unshift(head);
+    if (head.x===food.x && head.y===food.y){
+      food = randomFood();
+      // update score
+      document.getElementById('score').textContent = String(snake.length-1);
+    } else {
+      snake.pop();
+    }
+  }
+
+  function drawGrid(){
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 1;
+    for (let i=1;i<rows;i++){
+      const pos = i*cell;
+      ctx.beginPath(); ctx.moveTo(pos,0); ctx.lineTo(pos,height); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,pos); ctx.lineTo(width,pos); ctx.stroke();
+    }
+  }
+
+  function lerp(a,b,t){ return a + (b-a)*t; }
+
+  function draw(t){
+    const now = t;
+    if (!lastTime) lastTime = now;
+    const dt = now - lastTime;
+    lastTime = now;
+
+  // accumulate time for movement
+  if (running) lastMove += dt;
+    // calculate progress between moves for interpolation (0..1)
+    animProgress = Math.min(1, lastMove / MOVE_INTERVAL);
+
+    if (lastMove >= MOVE_INTERVAL){
+      // consume interval(s)
+      const times = Math.floor(lastMove / MOVE_INTERVAL);
+      for (let i=0;i<times;i++) updateMove();
+      lastMove = lastMove % MOVE_INTERVAL;
+      animProgress = lastMove / MOVE_INTERVAL;
+    }
+
+    // clear background (green)
+    ctx.fillStyle = '#00ff00';
+    ctx.fillRect(0,0,width,height);
+
+    // draw grid
+    drawGrid();
+
+    // draw snake with interpolation
+    for (let i=snake.length-1;i>=0;i--){
+      const seg = snake[i];
+      let px = seg.x;
+      let py = seg.y;
+      if (i===0){
+        // head: interpolate from previous position (if any)
+        // previous head position is current head minus dir
+        const prevX = seg.x - dir.x;
+        const prevY = seg.y - dir.y;
+        px = lerp(prevX, seg.x, animProgress);
+        py = lerp(prevY, seg.y, animProgress);
+      } else {
+        // smoothly follow the segment in front
+        const front = snake[i-1];
+        const prevX = front.x;
+        const prevY = front.y;
+        const before = seg;
+        px = lerp(before.x, prevX, animProgress);
+        py = lerp(before.y, prevY, animProgress);
+      }
+
+      ctx.fillStyle = snakeColor;
+      ctx.fillRect(px*cell+1, py*cell+1, cell-2, cell-2);
+
+      if (i===0){
+        // draw eyes
+        ctx.fillStyle = 'black';
+        const centre = cell/2;
+        const radius = 3;
+        ctx.beginPath(); ctx.arc(px*cell + centre - radius, py*cell + 8, radius, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px*cell + centre + radius, py*cell + 8, radius, 0, Math.PI*2); ctx.fill();
+      }
+    }
+
+    // draw food
+    ctx.fillStyle = foodColor;
+    ctx.fillRect(food.x*cell+1, food.y*cell+1, cell-2, cell-2);
+
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+
+  const playBtn = document.getElementById('play');
+  const overlay = document.getElementById('overlay');
+  const pauseBtn = document.getElementById('pause');
+  const restartBtn = document.getElementById('restart');
+
+  function startGame(){
+    running = true;
+    overlay.style.display = 'none';
+    pauseBtn.textContent = 'Pause';
+    // reset timers so movement starts cleanly
+    lastMove = 0; lastTime = 0;
+    document.getElementById('score').textContent = String(snake.length-1);
+  }
+  function togglePause(){
+    running = !running;
+    pauseBtn.textContent = running ? 'Pause' : 'Resume';
+    if (running){ lastTime = 0; }
+  }
+  function restart(){
+    // reset state
+    snake = [{x:10,y:10}]; dir = {x:0,y:1}; food = randomFood();
+    document.getElementById('score').textContent = '0';
+    running = false; overlay.style.display = 'flex';
+  }
+
+  playBtn.addEventListener('click', startGame);
+  pauseBtn.addEventListener('click', togglePause);
+  restartBtn.addEventListener('click', restart);
+  // allow Space or Enter to start
+  window.addEventListener('keydown', (e)=>{ if (!running && (e.key===' '||e.key==='Enter')) startGame(); });
+  </script>
+</body>
+</html>
