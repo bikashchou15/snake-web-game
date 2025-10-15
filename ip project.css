@@ -1,0 +1,57 @@
+/* Modern clean styling for the Snake web port */
+:root{
+  --bg:#0f1724; /* page background */
+  --card:#071026; /* canvas card */
+  --accent:#00ff00; /* green */
+  --muted:#aab3c2;
+  --btn:#111827;
+  --glass: rgba(255,255,255,0.04);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+body{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--bg),#021022);color:var(--muted);overflow:hidden}
+
+/* animated subtle radial gradient */
+body::before{
+  content:"";position:fixed;inset:-20%;z-index:0;background:radial-gradient(closest-side, rgba(0,255,128,0.06), transparent 40%), radial-gradient(circle at 80% 20%, rgba(0,120,255,0.04), transparent 35%);
+  filter: blur(40px);pointer-events:none;animation: drift 12s linear infinite;
+}
+
+@keyframes drift{0%{transform:translateY(0) scale(1)}50%{transform:translateY(-6%) scale(1.06)}100%{transform:translateY(0) scale(1)}}
+.container{width:min(720px,94vw);display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start}
+@media (max-width:900px){.container{grid-template-columns:1fr;}}
+
+.card{background:linear-gradient(180deg,var(--card), rgba(7,16,38,0.9));border-radius:14px;padding:18px;box-shadow:0 14px 50px rgba(2,6,23,0.7);border:1px solid rgba(255,255,255,0.03);position:relative;z-index:1}
+.canvas-wrap{position:relative;display:flex;align-items:center;justify-content:center;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;backdrop-filter: blur(6px);}
+.canvas-wrap canvas{border-radius:10px;display:block;z-index:1;box-shadow:0 20px 40px rgba(2,12,20,0.6), inset 0 0 12px rgba(0,0,0,0.25);border:3px solid rgba(255,255,255,0.02)}
+.ui{position:relative;font-size:14px;color:var(--muted);margin-bottom:8px}
+.controls{display:flex;gap:10px;margin-top:12px}
+.btn{background:var(--btn);color:#fff;padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600;transition:transform .12s ease, box-shadow .12s ease}
+.btn:active{transform:translateY(1px)}
+.play{background:linear-gradient(90deg,#2b3442,#111827)}
+.sidebar{display:flex;flex-direction:column;gap:12px}
+.hud{display:flex;flex-direction:column;gap:6px}
+.hud .score{font-size:28px;color:var(--accent);font-weight:800;letter-spacing:0.6px}
+.hud .label{font-size:12px;color:var(--muted);text-transform:uppercase}
+.instructions{font-size:13px;color:var(--muted);line-height:1.4}
+.footer{margin-top:18px;font-size:13px;color:var(--muted)}
+
+#credit{position:fixed;left:18px;bottom:12px;color:var(--muted);font-size:13px;z-index:5;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,0.18);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.02)}
+
+#overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;z-index:3}
+#play{font-size:20px;padding:16px 28px;border-radius:14px;border:none;background:linear-gradient(90deg,#062b10,#0c1110);color:var(--accent);box-shadow:0 10px 40px rgba(0,255,0,0.08), 0 2px 6px rgba(0,0,0,0.6);cursor:pointer;backdrop-filter: blur(4px);border:1px solid rgba(255,255,255,0.03)}
+#play:hover{transform:translateY(-3px);box-shadow:0 18px 60px rgba(0,255,0,0.12), 0 4px 10px rgba(0,0,0,0.6)}
+.transparent{background:transparent;border:1px solid rgba(255,255,255,0.04)}
+.small{font-size:12px;padding:8px 12px}
+
+/* subtle pulsing glow on canvas when game is idle */
+.canvas-wrap:not(:has(canvas:focus))::after{
+  content:"";position:absolute;inset:0;border-radius:12px;box-shadow:0 30px 80px rgba(0,255,0,0.03);pointer-events:none;mix-blend-mode:screen;opacity:0.9;
+}
+
+/* key map styles */
+.key-map{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.key-row{display:flex;gap:10px;align-items:center}
+.key-row kbd{background:rgba(255,255,255,0.06);padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);min-width:36px;text-align:center;font-weight:700;color:#fff}
+.key-row span{color:var(--muted);font-size:13px}
+.controls-card{display:flex;flex-direction:column}
